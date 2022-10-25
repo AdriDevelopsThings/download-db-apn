@@ -9,6 +9,7 @@ import (
 	"net/url"
 	"os"
 	"path"
+	"time"
 )
 
 type Document struct {
@@ -27,14 +28,19 @@ type DocumentResponse struct {
 }
 
 func GetDocument(infrastructure_id int, betriebsstelle *Betriebsstelle) (*Document, error) {
-	if betriebsstelle.DS100 == "" {
-		return nil, nil
-	}
 	resp, err := http.Get(fmt.Sprintf("https://trassenfinder.de/api/web/infrastrukturen/%d/dokumente?ds100=%s", infrastructure_id, url.QueryEscape(betriebsstelle.DS100)))
 	if err != nil {
 		return nil, err
 	}
+
+	if resp.StatusCode == 429 {
+		// too many requests
+		time.Sleep(5 * time.Second)
+		return GetDocument(infrastructure_id, betriebsstelle)
+	}
+
 	if resp.StatusCode != 200 {
+		fmt.Printf("Status code %d while request\n", resp.StatusCode)
 		return nil, nil
 	}
 	body, err := ioutil.ReadAll(resp.Body)
@@ -42,7 +48,10 @@ func GetDocument(infrastructure_id int, betriebsstelle *Betriebsstelle) (*Docume
 		return nil, err
 	}
 	var documentResponse DocumentResponse
-	json.Unmarshal(body, &documentResponse)
+	err = json.Unmarshal(body, &documentResponse)
+	if err != nil {
+		return nil, err
+	}
 	for _, document := range documentResponse.Dokumente {
 		if document.Typ == "apn_skizze" {
 			return &Document{
@@ -64,6 +73,10 @@ func (document *Document) Download(directory string) error {
 	resp, err := http.Get(fmt.Sprintf("https://trassenfinder.de/api/web/infrastrukturen/%d/dokumente/%s", document.InfrastructureId, document.Filename))
 	if err != nil {
 		return err
+	}
+	if resp.StatusCode == 429 {
+		time.Sleep(5 * time.Second)
+		return document.Download(directory)
 	}
 	defer resp.Body.Close()
 	filepath := document.GetFilepath(directory)
