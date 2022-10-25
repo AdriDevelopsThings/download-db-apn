@@ -6,6 +6,7 @@ import (
 	"io"
 	"io/ioutil"
 	"net/http"
+	"net/url"
 	"os"
 	"path"
 )
@@ -13,6 +14,7 @@ import (
 type Document struct {
 	InfrastructureId int
 	Filename         string
+	DS100            string
 }
 
 type DocumentResponse struct {
@@ -28,7 +30,7 @@ func GetDocument(infrastructure_id int, betriebsstelle *Betriebsstelle) (*Docume
 	if betriebsstelle.DS100 == "" {
 		return nil, nil
 	}
-	resp, err := http.Get(fmt.Sprintf("https://trassenfinder.de/api/web/infrastrukturen/%d/dokumente?ds100=%s", infrastructure_id, betriebsstelle.DS100))
+	resp, err := http.Get(fmt.Sprintf("https://trassenfinder.de/api/web/infrastrukturen/%d/dokumente?ds100=%s", infrastructure_id, url.QueryEscape(betriebsstelle.DS100)))
 	if err != nil {
 		return nil, err
 	}
@@ -46,11 +48,16 @@ func GetDocument(infrastructure_id int, betriebsstelle *Betriebsstelle) (*Docume
 			return &Document{
 				InfrastructureId: infrastructure_id,
 				Filename:         document.Dateiname,
+				DS100:            betriebsstelle.DS100,
 			}, nil
 		}
 	}
 
 	return nil, nil
+}
+
+func (document *Document) GetFilepath(directory string) string {
+	return path.Join(directory, document.DS100+"_"+document.Filename)
 }
 
 func (document *Document) Download(directory string) error {
@@ -59,7 +66,7 @@ func (document *Document) Download(directory string) error {
 		return err
 	}
 	defer resp.Body.Close()
-	filepath := path.Join(directory, document.Filename)
+	filepath := document.GetFilepath(directory)
 	file, err := os.Create(filepath)
 	if err != nil {
 		return err

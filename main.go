@@ -4,7 +4,6 @@ import (
 	"errors"
 	"fmt"
 	"os"
-	"path"
 
 	"github.com/adridevelopsthings/download-db-apn/pkg"
 	"github.com/akamensky/argparse"
@@ -48,7 +47,7 @@ func main() {
 			fmt.Printf("Error while getting document information about betriebsstelle %s: %v\n", betriebsstelle.DS100, err)
 		}
 		if document != nil {
-			if _, err := os.Stat(path.Join(*target_directory, document.Filename)); errors.Is(err, os.ErrNotExist) {
+			if _, err := os.Stat(document.GetFilepath(*target_directory)); errors.Is(err, os.ErrNotExist) {
 				documents = append(documents, document)
 			} else {
 				alreadyDownloaded += 1
