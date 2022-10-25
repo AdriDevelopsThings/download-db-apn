@@ -25,8 +25,10 @@ func main() {
 	if _, err := os.Stat(*target_directory); errors.Is(err, os.ErrNotExist) {
 		fmt.Printf("Directory %s does not exist, creating...\n", *target_directory)
 		err = os.Mkdir(*target_directory, os.ModePerm)
-		fmt.Printf("Error while creating directory %s: %v\n", *target_directory, err)
-		return
+		if err != nil {
+			fmt.Printf("Error while creating directory %s: %v\n", *target_directory, err)
+			return
+		}
 	}
 
 	fmt.Println("Downloading infrastructure infos...")

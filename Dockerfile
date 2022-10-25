@@ -13,4 +13,4 @@ COPY --from=0 /build/main /dist/main
 
 ENV TARGET_DIRECTORY=/target
 VOLUME [ "/target" ]
-CMD ["/dist/main"]
+CMD ["/dist/main", "-t", "/target"]
