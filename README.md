@@ -22,3 +22,9 @@ Arguments:
   -t  --target-directory   The directory where the apk sketches will be saved
                            in. Default: target
 ```
+
+## Use with docker
+
+```
+docker run -v ./target:/target ghcr.io/adridevelopsthings/download-db-apn:main
+```
